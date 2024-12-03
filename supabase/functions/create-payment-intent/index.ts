@@ -1,3 +1,4 @@
+// Trigger deployment - Added on 2024-12-03
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Stripe from 'https://esm.sh/stripe@12.0.0'
@@ -13,6 +14,7 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -23,6 +25,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     )
 
+    // Get auth user
     const {
       data: { user },
       error: authError,
@@ -32,12 +35,14 @@ serve(async (req) => {
       throw new Error('Unauthorized')
     }
 
+    // Get request body
     const { projectId, amount } = await req.json()
 
     if (!projectId || !amount) {
       throw new Error('Missing required fields: projectId and amount')
     }
 
+    // Get project to verify ownership
     const { data: project, error: projectError } = await supabase
       .from('projects')
       .select('*')
@@ -48,8 +53,9 @@ serve(async (req) => {
       throw new Error('Project not found or unauthorized')
     }
 
+    // Create payment intent
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100),
+      amount: Math.round(amount * 100), // Convert to cents
       currency: 'usd',
       metadata: {
         projectId,
@@ -57,6 +63,7 @@ serve(async (req) => {
       },
     })
 
+    // Update project with payment intent ID
     await supabase
       .from('projects')
       .update({
