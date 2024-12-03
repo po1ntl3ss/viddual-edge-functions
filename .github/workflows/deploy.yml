@@ -1,0 +1,26 @@
+name: Deploy Edge Function
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'supabase/functions/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_ID: hdlyafucufpdkyqhqsln
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+
+      - name: Deploy Edge Function
+        run: |
+          supabase functions deploy create-payment-intent --project-ref $PROJECT_ID
